@@ -34,28 +34,8 @@ variable comment {
   default     = ""
 }
 
-variable dynamic_custom_error_response {
-  description = "Custom error response to be used in dynamic block"
-  type        = any
-}
-
-variable dynamic_custom_origin_config {
-  description = "Configuration for the custom origin config to be used in dynamic block"
-  type        = any
-}
-
 variable dynamic_default_cache_behavior {
   description = "Default Cache Behviors to be used in dynamic block"
-  type        = any
-}
-
-variable dynamic_ordered_cache_behavior {
-  description = "Ordered Cache Behaviors to be used in dynamic block"
-  type        = any
-}
-
-variable dynamic_origin_group {
-  description = "Origin Group to be used in dynamic block"
   type        = any
 }
 
@@ -82,24 +62,24 @@ variable http_version {
   default     = "http2"
 }
 
-variable iam_certificate_id {
-  description = "Specifies IAM certificate id for CloudFront distribution"
-  type        = string
-  default     = null
-}
+# variable iam_certificate_id {
+#   description = "Specifies IAM certificate id for CloudFront distribution"
+#   type        = string
+#   default     = null
+# }
 
-variable minimum_protocol_version {
-  description = <<EOF
-    The minimum version of the SSL protocol that you want CloudFront to use for HTTPS connections. 
-    One of SSLv3, TLSv1, TLSv1_2016, TLSv1.1_2016 or TLSv1.2_2018. Default: TLSv1. 
-    NOTE: If you are using a custom certificate (specified with acm_certificate_arn or iam_certificate_id), 
-    and have specified sni-only in ssl_support_method, TLSv1 or later must be specified. 
-    If you have specified vip in ssl_support_method, only SSLv3 or TLSv1 can be specified. 
-    If you have specified cloudfront_default_certificate, TLSv1 must be specified.
-    EOF
+# variable minimum_protocol_version {
+#   description = <<EOF
+#     The minimum version of the SSL protocol that you want CloudFront to use for HTTPS connections. 
+#     One of SSLv3, TLSv1, TLSv1_2016, TLSv1.1_2016 or TLSv1.2_2018. Default: TLSv1. 
+#     NOTE: If you are using a custom certificate (specified with acm_certificate_arn or iam_certificate_id), 
+#     and have specified sni-only in ssl_support_method, TLSv1 or later must be specified. 
+#     If you have specified vip in ssl_support_method, only SSLv3 or TLSv1 can be specified. 
+#     If you have specified cloudfront_default_certificate, TLSv1 must be specified.
+#     EOF
 
-  type = string
-}
+#   type = string
+# }
 
 variable price {
   description = "The price class of the CloudFront Distribution.  Valid types are PriceClass_All, PriceClass_100, PriceClass_200"
@@ -125,10 +105,10 @@ variable restriction_type {
   default     = "none"
 }
 
-variable ssl_support_method {
-  description = "Specifies how you want CloudFront to serve HTTPS requests. One of vip or sni-only."
-  type        = string
-}
+# variable ssl_support_method {
+#   description = "Specifies how you want CloudFront to serve HTTPS requests. One of vip or sni-only."
+#   type        = string
+# }
 
 variable tag_name {
   description = "The tagged name"
@@ -196,15 +176,6 @@ output "hosted_zone_id" {
   description = "The CloudFront Route 53 zone ID that can be used to route an Alias Resource Record Set to. This attribute is simply an alias for the zone ID Z2FDTNDATAQYW2."
 }
 
-terraform {
-  backend "s3" {
-    bucket  = "jmgreg31"
-    key     = "cloudfront/terraform.tfstate"
-    region  = "us-east-1"
-    encrypt = true
-  }
-}
-
 provider "aws" {
   version = ">= 2.28.0"
   region  = var.region
@@ -218,21 +189,27 @@ module demo_cf {
   alias                          = var.alias
   cloudfront_default_certificate = var.cloudfront_default_certificate
   comment                        = var.comment
-  dynamic_custom_error_response  = var.dynamic_custom_error_response
   dynamic_default_cache_behavior = var.dynamic_default_cache_behavior
   enable                         = var.enable
   enable_ipv6                    = var.enable_ipv6
   http_version                   = var.http_version
-  iam_certificate_id             = var.iam_certificate_id
-  minimum_protocol_version       = var.minimum_protocol_version
-  dynamic_ordered_cache_behavior = var.dynamic_ordered_cache_behavior
-  dynamic_custom_origin_config   = var.dynamic_custom_origin_config
-  dynamic_s3_origin_config       = var.dynamic_s3_origin_config
-  dynamic_origin_group           = var.dynamic_origin_group
+  #iam_certificate_id             = var.iam_certificate_id
+  #minimum_protocol_version       = var.minimum_protocol_version
+  dynamic_s3_origin_config       = [
+  {
+    domain_name            = "acme-c-uw2-cloudfront.s3.amazonaws.com"
+    origin_id              = "acme-c"
+    origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
+  }
+]
   price                          = var.price
   region                         = var.region
   restriction_type               = var.restriction_type
-  ssl_support_method             = var.ssl_support_method
+  #ssl_support_method             = var.ssl_support_method
   tag_name                       = var.tag_name
   webacl                         = var.webacl
+}
+
+resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
+  comment = "debug_test_access_idendity"
 }
